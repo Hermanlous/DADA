@@ -26,7 +26,7 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
             FlyplassKodeFra TEXT,
             PlanlagtAvgang TEXT NOT NULL,
             PlanlagtAnkomst TEXT NOT NULL,
-            PRIMARY KEY (MellomLandingID, FlyruteNummer),
+            PRIMARY KEY (MellomLandingID, FlyRuteNummer),
             FOREIGN KEY (FlyplassKodeFra) REFERENCES Flyplass(FlyplassKode),
             FOREIGN KEY (FlyplassKodeTil) REFERENCES Flyplass(FlyplassKode),
             FOREIGN KEY (FlyRuteNummer) REFERENCES FlyRute(FlyRuteNummer)
@@ -65,7 +65,7 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
             ProdusentNavn TEXT,
             Navn TEXT,
             DriftAar INTEGER NOT NULL,
-            FOREIGN KEY (FlaateID) REFERENCES Flåte(FlaateID),
+            FOREIGN KEY (FlaateID) REFERENCES Flaate(FlaateID),
             FOREIGN KEY (FlyTypeNavn) REFERENCES FlyType(FlyTypeNavn),
             FOREIGN KEY (ProdusentNavn) REFERENCES FlyProdusent(ProdusentNavn)
         )
@@ -95,7 +95,7 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
             RegistreringsNummer TEXT,
             Rad INTEGER NOT NULL,
             Bokstav CHAR NOT NULL,
-            NødUtgang BOOLEAN NOT NULL,
+            NoedUtgang INTEGER NOT NULL CHECK (NoedUtgang IN (0,1)),
             FOREIGN KEY (RegistreringsNummer) REFERENCES Fly(RegistreringsNummer)
         )
     ''')
@@ -129,7 +129,7 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
     cursor.execute('''
         CREATE TABLE Flyvning (
             LøpeNummer INTEGER NOT NULL,
-            FlyRuteNummer TEXT NOT NULL,
+            FlyRuteNummer INTEGER NOT NULL,
             MellomLandingID TEXT,
             RegistreringsNummer TEXT,
             Status TEXT NOT NULL CHECK (Status IN ('Planlagt', 'Aktiv', 'Fullført', 'Kansellert')),
@@ -153,12 +153,12 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
 
     cursor.execute('''
         CREATE TABLE Billett (
-            BillettID TEXT PRIMARY KEY NOT NULL,
-            LøpeNummer TEXT NOT NULL,
-            FlyRuteNummer TEXT NOT NULL,
-            ReferanseNummerTur TEXT NOT NULL,
-            ReferanseNummerRetur TEXT NOT NULL,
-            Innsjekking TEXT NOT NULL,
+            BillettID INTEGER PRIMARY KEY AUTOINCREMENT,
+            LøpeNummer INTEGER NOT NULL,
+            FlyRuteNummer INTEGER NOT NULL,
+            ReferanseNummerTur INTEGER NOT NULL,
+            ReferanseNummerRetur INTEGER,
+            Innsjekking TEXT,
             Kategori TEXT NOT NULL CHECK (Kategori IN ('premium', 'økonomi', 'budsjett')),
             FOREIGN KEY (LøpeNummer, FlyRuteNummer) REFERENCES Flyvning(LøpeNummer, FlyRuteNummer),
             FOREIGN KEY (ReferanseNummerTur) REFERENCES Billettkjop(ReferanseNummer),
@@ -168,17 +168,17 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
 
     cursor.execute('''
         CREATE TABLE Billettkjop (
-            ReferanseNummer TEXT PRIMARY KEY,
-            KundeID TEXT,
-            Pris DECIMAL(10,2) NOT NULL,
+            ReferanseNummer INTEGER PRIMARY KEY,
+            KundeID INTEGER,
+            Pris INTEGER NOT NULL,
             FOREIGN KEY (KundeID) REFERENCES Kunde(KundeID)
         )
     ''')
 
     cursor.execute('''
         CREATE TABLE TilhorendeSete (
-            BillettID TEXT,
-            SeteID TEXT,
+            BillettID INTEGER,
+            SeteID INTEGER,
             PRIMARY KEY (BillettID, SeteID),
             FOREIGN KEY (BillettID) REFERENCES Billett(BillettID),
             FOREIGN KEY (SeteID) REFERENCES Sete(SeteID)
@@ -187,7 +187,7 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
 
     cursor.execute('''
         CREATE TABLE Medlem (
-            KundeID TEXT PRIMARY KEY,
+            KundeID INTEGER PRIMARY KEY,
             UnikFordelsRef TEXT,
             FOREIGN KEY (KundeID) REFERENCES Kunde(KundeID)
         )
@@ -196,9 +196,9 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
     cursor.execute('''
         CREATE TABLE FlyddAv (
             FlyRuteNummer TEXT PRIMARY KEY,
-            FlåteID TEXT,
+            FlaateID TEXT,
             FOREIGN KEY (FlyRuteNummer) REFERENCES Flyvning(FlyRuteNummer),
-            FOREIGN KEY (FlåteID) REFERENCES Flåte(FlåteID)
+            FOREIGN KEY (FlaateID) REFERENCES Flaate(FlaateID)
         )
     ''')
 
@@ -229,7 +229,7 @@ def legg_inn_data(db_navn='flydatabase.db'):
 
     conn = sqlite3.connect(db_navn)
     cursor = conn.cursor()
-    
+    cursor.execute("PRAGMA foreign_keys = ON")
     # 1. Flyplasser
 
     cursor.execute(
@@ -247,7 +247,7 @@ def legg_inn_data(db_navn='flydatabase.db'):
     cursor.execute(
         "INSERT INTO Flyplass (FlyplassKode, FlyplassNavn) VALUES ('TRD', 'Trondheim lufthavn, Værnes')"
     )
-
+    conn.commit()
     # 2. Flyprodusenter
 
     cursor.execute(
@@ -262,19 +262,19 @@ def legg_inn_data(db_navn='flydatabase.db'):
         "INSERT INTO Flyprodusent (ProdusentNavn, Nasjonalitet, Stiftelsesaar) VALUES ('De Havilland Canada', 'Canada', 1928)"
 
     )
-    
+    conn.commit()
     # 3. Flytyper
 
     cursor.execute(
-        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Boeing 737 800', 'The Boeing Company', 1997, 2020)",
+        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Boeing 737 800', 'The Boeing Company', 1997, 2020)"
     )
     cursor.execute(
-        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Airbus a320neo', 'Airbus Group', 2016, NULL)",
+        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Airbus a320neo', 'Airbus Group', 2016, NULL)"
     )
     cursor.execute(
-        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Dash-8 100', 'De Havilland Canada', 1984, 2005)",
+        "INSERT INTO Flytype (FlyTypeNavn, ProdusentNavn, FoersteProduksjonsAar, SisteProduksjonsAar) VALUES ('Dash-8 100', 'De Havilland Canada', 1984, 2005)"
     )
-    
+    conn.commit()
     # 4. Flyselskaper
 
     cursor.execute(
@@ -286,96 +286,107 @@ def legg_inn_data(db_navn='flydatabase.db'):
     cursor.execute(
         "INSERT INTO Flyselskap (FlyselskapKode, SelskapsNavn) VALUES ('WF', 'Widerøe')"
     )
-    
+    conn.commit()
+    # Flåte
+    cursor.execute(
+        "INSERT INTO Flaate (FlaateID, FlyselskapKode) VALUES (1, 'DY')",
+    )
+    cursor.execute(
+        "INSERT INTO Flaate (FlaateID, FlyselskapKode) VALUES (2, 'SK')",
+    )
+    cursor.execute(
+        "INSERT INTO Flaate (FlaateID, FlyselskapKode) VALUES (3, 'WF')",
+    )
+    conn.commit()
     # 5. Fly
     # Norwegian
     # KAnskje generere FlåteID? Autoincrement?
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENU', 1, 'Boeing 737 800', 'The Boeing Company', NULL, 2015)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENU', 1, 'Boeing 737 800', 'The Boeing Company', NULL, 2015)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENR', 1, 'Boeing 737 800', 'The Boeing Company', 'Jan Bålsrud', 2018)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENR', 1, 'Boeing 737 800', 'The Boeing Company', 'Jan Bålsrud', 2018)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-NIQ', 1, 'Boeing 737 800', 'The Boeing Company', 'Max Manus', 2011)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-NIQ', 1, 'Boeing 737 800', 'The Boeing Company', 'Max Manus', 2011)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENS', 1, 'Boeing 737 800', 'The Boeing Company', NULL, 2017)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-ENS', 1, 'Boeing 737 800', 'The Boeing Company', NULL, 2017)"
     )
     # SAS
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RUB', 2, 'Airbus a320neo', 'Airbus Group', 'Birger Viking', 2020)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RUB', 2, 'Airbus a320neo', 'Airbus Group', 'Birger Viking', 2020)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-DIR', 2, 'Airbus a320neo', 'Airbus Group', 'Nora Viking', 2023)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-DIR', 2, 'Airbus a320neo', 'Airbus Group', 'Nora Viking', 2023)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RUP', 2, 'Airbus a320neo', 'Airbus Group', 'Ragnhild Viking', 2024)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RUP', 2, 'Airbus a320neo', 'Airbus Group', 'Ragnhild Viking', 2024)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RZE', 2, 'Airbus a320neo', 'Airbus Group', 'Ebbe Viking', 2024)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('SE-RZE', 2, 'Airbus a320neo', 'Airbus Group', 'Ebbe Viking', 2024)"
     )
-
+    conn.commit()
     # Widerøe
     #Autoincrement FlåteID
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIH', 3, 'Dash-8 100', 'De Havilland Canada', 'Oslo', 1994)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIH', 3, 'Dash-8 100', 'De Havilland Canada', 'Oslo', 1994)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIA', 3, 'Dash-8 100', 'De Havilland Canada', 'Nordland', 1993)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIA', 3, 'Dash-8 100', 'De Havilland Canada', 'Nordland', 1993)"
     )
     cursor.execute(
-        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIL', 3, 'Dash-8 100', 'De Havilland Canada', 'Narvik', 1995)",
+        "INSERT INTO Fly (RegistreringsNummer, FlaateID, FlyTypeNavn, ProdusentNavn, Navn, DriftAar) VALUES ('LN-WIL', 3, 'Dash-8 100', 'De Havilland Canada', 'Narvik', 1995)"
     )
-
+    conn.commit()
     
     # 7. Flyruter
     # Start dato
     cursor.execute(
-        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('WF1311', '12.01.2001', NULL, '12345')",
+        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('WF1311', '12.01.2001', NULL, '12345')"
     )
     cursor.execute(
-        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('WF1302', '12.01.2001', NULL, '12345')",
+        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('WF1302', '12.01.2001', NULL, '12345')"
     )
     cursor.execute(
-        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('DY753', '12.01.2001', NULL, '1234567')",
+        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('DY753', '12.01.2001', NULL, '1234567')"
     )
     cursor.execute(
-        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('SK332', '12.01.2001', NULL, '1234567')",
+        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('SK332', '12.01.2001', NULL, '1234567')"
     )
     cursor.execute(
-        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('SK888', '12.01.2001', NULL, '12345')",
+        "INSERT INTO FlyRute (FlyRuteNummer, OppstartDato, SluttDato, Ukedagskode) VALUES ('SK888', '12.01.2001', NULL, '12345')"
     )
-    
+    conn.commit()
     # 8. Legger inn reiser
     # SK888
     cursor.execute("""
-        INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BGO', 'BGO', 'TRD','SK888', '10:00', '11:10')
+        INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BGO','SK888', 'BGO', 'TRD', '10:00', '11:10')
     """)
     cursor.execute("""
-        INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('BGO-SVG', 'SVG', 'BGO','SK888', '11:40', '12:10')
+        INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('BGO-SVG','SK888', 'SVG', 'BGO', '11:40', '12:10')
         """)
 
     cursor.execute("""
-            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BGO-SVG', 'SVG', 'TRD','SK888', '10:00', '12:10')
+            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BGO-SVG','SK888', 'SVG', 'TRD', '10:00', '12:10')
             """)
     # SK332
     cursor.execute("""
-            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('OSL-TRD', 'TRD', 'OSL','SK332', '08:00', '09:05')
+            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('OSL-TRD','SK332', 'TRD', 'OSL', '08:00', '09:05')
         """)
     # DY753
     cursor.execute("""
-            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-OSL', 'OSL', 'TRD','DY753', '10:20', '11:15')
+            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-OSL','DY753', 'OSL', 'TRD', '10:20', '11:15')
         """)
     # WF1302
     cursor.execute("""
-            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('BOO-TRD', 'TRD', 'BOO','WF1302', '07:35', '08:40')
+            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('BOO-TRD','WF1302', 'TRD', 'BOO', '07:35', '08:40')
         """)
     # WF1311
     cursor.execute("""
-            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BOO', 'BOO', 'TRD','WF1311', '15:15', '16:20')
+            INSERT INTO MellomReise (MellomLandingID, FlyRuteNummer, FlyplassKodeTil, FlyplassKodeFra,  PlanlagtAvgang, PlanlagtAnkomst) VALUES ('TRD-BOO','WF1311', 'BOO', 'TRD', '15:15', '16:20')
             """)
-    
+    conn.commit()
     # 9. Priser
     # SK888
     #
@@ -469,6 +480,7 @@ def legg_inn_data(db_navn='flydatabase.db'):
         "INSERT INTO Pris (KlasseID,FlyRuteNummer, MellomLandingID,pris) VALUES ('budsjett','WF1311','TRD-BOO',599 )"
 
     )
+    conn.commit()
     # 10. Flyrtuer for 1. april 2025
     # Autoincrement på LøpeNummer, skal vi bestemme fly?
     cursor.execute(
@@ -480,15 +492,16 @@ def legg_inn_data(db_navn='flydatabase.db'):
     cursor.execute(
         "INSERT INTO Flyvning (LøpeNummer, FlyRuteNummer, MellomLandingID, RegistreringsNummer,Status, Avgang, Ankomst) VALUES (3, 'SK888', 'TRD-BGO-SVG', 'LN-WIH', 'Planlagt',NULL, NULL)"
     )
+    conn.commit()
     #Sete konfigurasjon.
     #ChatGPT ble benyttet for å rette feil og refaktorere koden riktig.
     # Boeing 737 800
-    for rad in range(1, 32):  # Rows 1 to 31
+    for rad in range(1, 33):  # Rows 1 to 31
         for sete in ['A', 'B', 'C', 'D', 'E', 'F']:
             nødUtgang = 1 if rad == 13 else 0
 
             cursor.executemany(
-                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NoedUtgang) VALUES (?, ?, ?, ?)",
                 [
                     ('LN-ENU', rad, sete, nødUtgang),
                     ('LN-ENR', rad, sete, nødUtgang),
@@ -497,12 +510,12 @@ def legg_inn_data(db_navn='flydatabase.db'):
                 ]
             )
     #Airbus a320neo
-    for rad in range(1, 30):
+    for rad in range(1, 31):
         for sete in ['A', 'B', 'C', 'D', 'E', 'F']:
             nødUtgang = 1 if rad == 12 or rad == 11 else 0
 
             cursor.executemany(
-                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NoedUtgang) VALUES (?, ?, ?, ?)",
                 [
                     ('SE-RUB', rad, sete, nødUtgang),
                     ('SE-DIR', rad, sete, nødUtgang),
@@ -511,29 +524,136 @@ def legg_inn_data(db_navn='flydatabase.db'):
                 ]
             )
     #Dash - 8 100
-
+    # ChatGPT ble benyttet for å sette de første radene.
     for sete in ['C','D']:
-        cursor.executemany(
-            "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+        cursor.executemany(#Fra her, til
+            "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NoedUtgang) VALUES (?, ?, ?, ?)",
             [
                 ('LN-WIH', 1, sete, 0),
                 ('LN-WIA', 1, sete, 0),
-                ('SLN-WIL', 1, sete, 0)
+                ('LN-WIL', 1, sete, 0)
             ]
-        )
-    for rad in range(2, 10):
+        )#Her
+
+    for rad in range(2, 11):
         for sete in ['A', 'B', 'C', 'D']:
             nødUtgang = 1 if rad == 5 else 0
 
             cursor.executemany(
-                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NoedUtgang) VALUES (?, ?, ?, ?)",
                 [
                     ('LN-WIH', rad, sete, nødUtgang),
                     ('LN-WIA', rad, sete, nødUtgang),
-                    ('SLN-WIL', rad, sete, nødUtgang)
+                    ('LN-WIL', rad, sete, nødUtgang)
                 ]
             )
     conn.commit()
     conn.close()
 opprett_flydatabase()
 legg_inn_data()
+
+def bruks_tilfelle_fem(db_navn='flydatabase.db'):
+    conn = sqlite3.connect(db_navn)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+
+    querry = """
+        SELECT F.SelskapsNavn, T.FlyTypeNavn, COUNT(L.RegistreringsNummer) AS AntallFly
+        FROM Fly L
+        JOIN Flaate FL ON L.FlaateID = FL.FlaateID
+        JOIN Flyselskap F ON FL.FlyselskapKode = F.FlyselskapKode
+        JOIN FlyType T ON L.FlyTypeNavn = T.FlyTypeNavn
+        GROUP BY F.SelskapsNavn, T.FlyTypeNavn;
+    """
+
+    cursor.execute(querry)
+    resultater = cursor.fetchall()
+    conn.close()
+    return resultater
+
+print(bruks_tilfelle_fem())
+
+
+
+
+def bruks_tilfelle_syv(db_navn='flydatabase.db'):
+    conn = sqlite3.connect(db_navn)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+    OppretteKunde =[
+        (1, 'August', '42424242', 'TooCoolForSchool@mail.com', 'Norge')
+    ]
+    sql_query_ny_kunde = """
+    INSERT INTO Kunde VALUES (?, ?, ?, ?, ?)
+    """
+    cursor.executemany(sql_query_ny_kunde, OppretteKunde)
+    BillettKjopAvEnKunde = [
+        (1, 1, 599)
+
+    ]
+
+    sql_query_kjop = """
+    INSERT INTO BillettKjop (ReferanseNummer, KundeID, Pris) VALUES (?, ?, ?)
+    """
+    cursor.executemany(sql_query_kjop, BillettKjopAvEnKunde)
+
+    TiBilletter = [
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+        (1, 'WF1302', 1, None, None, 'budsjett'),
+
+    ]
+    query_billett = """
+    INSERT INTO Billett (LøpeNummer, FlyRuteNummer, ReferanseNummerTur, ReferanseNummerRetur, Innsjekking, Kategori) 
+    VALUES (?, ?, ?, ?, ?, ?)
+    """
+    cursor.executemany(query_billett, TiBilletter)
+
+    TiSeter = [
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 4),
+        (5, 5),
+        (6, 6),
+        (7, 7),
+        (8, 8),
+        (9, 9),
+        (10, 10),
+
+    ]
+
+    query_sete_reservasjon = """
+    INSERT INTO TilhorendeSete (BillettID, SeteID) VALUES (?, ?)
+    """
+    cursor.executemany(query_sete_reservasjon, TiSeter)
+
+    query_billett_kjop = """
+        SELECT * FROM Billettkjop
+    """
+    query_billetter = """
+            SELECT * FROM Billett
+        """
+    conn.commit()
+    query_tilhorende_seter = """
+            SELECT * FROM TilhorendeSete
+        """
+
+    #cursor.execute(query_billett_kjop)
+    #cursor.execute(query_billetter)
+    cursor.execute(query_tilhorende_seter)
+    resultater = cursor.fetchall()
+    conn.close()
+    return resultater
+
+
+
+print(bruks_tilfelle_syv())
+
