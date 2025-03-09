@@ -91,10 +91,11 @@ def opprett_flydatabase(db_navn='flydatabase.db'):
 
     cursor.execute('''
         CREATE TABLE Sete (
-            SeteID TEXT PRIMARY KEY,
+            SeteID INTEGER PRIMARY KEY AUTOINCREMENT,
             RegistreringsNummer TEXT,
             Rad INTEGER NOT NULL,
             Bokstav CHAR NOT NULL,
+            NødUtgang BOOLEAN NOT NULL,
             FOREIGN KEY (RegistreringsNummer) REFERENCES Fly(RegistreringsNummer)
         )
     ''')
@@ -479,12 +480,60 @@ def legg_inn_data(db_navn='flydatabase.db'):
     cursor.execute(
         "INSERT INTO Flyvning (LøpeNummer, FlyRuteNummer, MellomLandingID, RegistreringsNummer,Status, Avgang, Ankomst) VALUES (3, 'SK888', 'TRD-BGO-SVG', 'LN-WIH', 'Planlagt',NULL, NULL)"
     )
+    #Sete konfigurasjon.
+    #ChatGPT ble benyttet for å rette feil og refaktorere koden riktig.
+    # Boeing 737 800
+    for rad in range(1, 32):  # Rows 1 to 31
+        for sete in ['A', 'B', 'C', 'D', 'E', 'F']:
+            nødUtgang = 1 if rad == 13 else 0
 
+            cursor.executemany(
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                [
+                    ('LN-ENU', rad, sete, nødUtgang),
+                    ('LN-ENR', rad, sete, nødUtgang),
+                    ('LN-NIQ', rad, sete, nødUtgang),
+                    ('LN-ENS', rad, sete, nødUtgang)
+                ]
+            )
+    #Airbus a320neo
+    for rad in range(1, 30):
+        for sete in ['A', 'B', 'C', 'D', 'E', 'F']:
+            nødUtgang = 1 if rad == 12 or rad == 11 else 0
 
+            cursor.executemany(
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                [
+                    ('SE-RUB', rad, sete, nødUtgang),
+                    ('SE-DIR', rad, sete, nødUtgang),
+                    ('SE-RUP', rad, sete, nødUtgang),
+                    ('SE-RZE', rad, sete, nødUtgang)
+                ]
+            )
+    #Dash - 8 100
+
+    for sete in ['C','D']:
+        cursor.executemany(
+            "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+            [
+                ('LN-WIH', 1, sete, 0),
+                ('LN-WIA', 1, sete, 0),
+                ('SLN-WIL', 1, sete, 0)
+            ]
+        )
+    for rad in range(2, 10):
+        for sete in ['A', 'B', 'C', 'D']:
+            nødUtgang = 1 if rad == 5 else 0
+
+            cursor.executemany(
+                "INSERT INTO Sete (RegistreringsNummer, Rad, Bokstav, NødUtgang) VALUES (?, ?, ?, ?)",
+                [
+                    ('LN-WIH', rad, sete, nødUtgang),
+                    ('LN-WIA', rad, sete, nødUtgang),
+                    ('SLN-WIL', rad, sete, nødUtgang)
+                ]
+            )
     conn.commit()
     conn.close()
 opprett_flydatabase()
 legg_inn_data()
-
-
-
