@@ -571,17 +571,50 @@ def bruks_tilfelle_fem(db_navn='flydatabase.db'):
     conn.close()
     return resultater
 
-print(bruks_tilfelle_fem())
+#print(bruks_tilfelle_fem())
 
 
+def bruks_tilfelle_seks(db_navn='flydatabase.db'):
+    flyplasser ={1: "Bodø lufthavn", 2: "Bergen lufthavn", 3: "Oslo lufthavn", 4: "Stavanger lufthavn", 5: "Trondheim lufthavn"}
+    print('\n God dag kjære reisende, hvilken flyplass vil du reise fra? \n Du kan velge mellom: \n 1: Bode lufthavn \n 2: Bergen lufthavn \n 3: Oslo lufthavn \n 4: Stavanger lufthavn \n 5: Trondheim lufthavn \n ')
+    flyplassValg = int(input("Svar med å skrive inn nummeret til flyplassen du velger. \n"))
 
+    if flyplassValg in flyplasser:
+        print("Du ønsker å fly fra " + flyplasser[flyplassValg])
+    else:
+        print("Dumming, du kan velge mellom 1-5.") # må sende dem tilbake til start her.
+    
+    ukedager = {1:"mandag", 2: "tirsdag", 3: "onsdag", 4: "torsdag", 5: "fredag", 6: "lørdag", 7: "søndag"}
+    print("\n Hvilken ukedag er du interessert i? \n 1: Mandag \n 2: Tirsdag \n 3: Onsdag \n 4: Torsdag \n 5: Fredag \n 6: Lørdag \n 7: Søndag"  )
+    ukedagValg = int(input("\nSvar med å skrive in nummeret på ukedagen du velger: \n"))
+
+    if ukedagValg in ukedager:
+        print("Du er interrisert i " + ukedager[ukedagValg] + "\n")
+    else:
+        print("Du kan velge mellom 1-7 dummen.") # Må sende dem tilbake til start her.
+
+    an = {1: "Ankomster", 2: "Avganger"} #Hvis du kommer på et bedre navn enn "an" bare endre
+    print ("Hva ønsker du å se? Du kan velge mellom \n 1: Avganger fra " + flyplasser[flyplassValg] + " på " + ukedager[ukedagValg] + "\n 2: Ankomster til " + flyplasser[flyplassValg] + " på " + ukedager[ukedagValg])
+    anValg = int(input("\nSkriv inn nummeret til det du ønsker å se:\n"))
+
+    if anValg == 1:
+        print("Du ønsker å se avganger fra " + flyplasser[flyplassValg] + " på " + ukedager[ukedagValg])
+    elif anValg == 2:
+        print("Du ønsker å se ankomster til " + flyplasser[flyplassValg] + " på " + ukedager[ukedagValg])
+    else:
+        print("Du kan velge mellom 1 og 2 dummen") #Må sende tilbake til start
+
+
+    return 0 # sånn at vscode ikke blir sint på meg. Fjern denne linjen hvis du ser den, da har Oline glemt å fjerne den. 
+
+bruks_tilfelle_seks()
 
 def bruks_tilfelle_syv(db_navn='flydatabase.db'):
     conn = sqlite3.connect(db_navn)
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON")
     OppretteKunde =[
-        (1, 'August', '42424242', 'TooCoolForSchool@mail.com', 'Norge')
+        (1, 'August', '42424242', 'TooCoolForSchool@mail.com', 'Norge') # Stolt nederlender
     ]
     sql_query_ny_kunde = """
     INSERT INTO Kunde VALUES (?, ?, ?, ?, ?)
@@ -653,7 +686,5 @@ def bruks_tilfelle_syv(db_navn='flydatabase.db'):
     conn.close()
     return resultater
 
-
-
-print(bruks_tilfelle_syv())
+#print(bruks_tilfelle_syv())
 
